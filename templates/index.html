@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    
+    <title>Schedule Page</title>
+    
+    <style>
+
+        li {
+            position: relative;
+        }
+        
+        li button {
+            position: absolute;
+            right:20px; /* Adjust this value as needed */
+            background:none;
+            color:cyan;
+
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color:#385170; 
+            color:#ececec; 
+            font-family:Century Gothic;
+            line-height:30px;
+            font-weight:500px;
+        }
+
+        .category {
+            margin-bottom: 20px;
+            display:flex;
+            justify-content:center;
+        }
+        .sched{
+            background-color:#142d4c; 
+            padding:20px;
+        }
+
+        .form input,
+        .form select {
+            margin-left:15px; 
+            padding: 5px; 
+            align-items: center;
+            display: block; 
+        }
+        .form{
+            margin-bottom: 20px;
+            display:flex;
+            justify-content:center;
+        }
+        .sched{
+            display:flex;
+            justify-content:center;
+            color:whitel;
+        }
+        .scheduleList{
+            color:white;
+        }
+
+        /* Add these CSS styles to your existing styles in the <style> section */
+        button {
+            display: inline-block;
+            outline: none;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 3px;
+            padding: 6px 10px;
+            border: none;
+            color: #000021;
+            background: #1de9b6;
+            line-height: 1.15;
+            font-size: 13px;
+            transition: all 0.1s ease;
+            margin-left:10px;
+        }
+        
+        button:hover {
+            box-shadow: 0 0 0 0 #fff, 0 0 0 3px #1de9b6;
+        }
+        
+        /* Additional style for the "Check Notifications" button */
+        button#checkNotifications {
+            background: #ff5722;
+            color: white;
+            font-weight: 500;
+            padding: 10px 20px;
+        }
+        
+        /* Additional style for the "Add" button in the form */
+        .form button {
+            background: #2196F3;
+            color: white;
+        }
+        
+        /* Optional: Style the "Add" button on hover */
+        .form button:hover {
+            background: #1976D2;
+        }
+
+        <style>
+            .sched {
+                /* Add padding to the right of the text to create space */
+                padding-right: 10px; /* You can adjust the value to your liking */
+            }
+        
+            /* Alternatively, you can add margin to the icon */
+            .sched i {
+                /* Add margin to the right of the icon to create space */
+                margin-right: 10px; /* You can adjust the value to your liking */
+            }
+        </style>
+        
+      
+   
+</head>
+<body>
+    <div class="container">
+        <h1 class="sched"><i class="fas fa-calendar-alt"></i> Schedule Page</h1>
+   
+
+        <div class="form">
+            <input type="text" id="scheduleInput" placeholder="Add a note or schedule">
+            <input type="datetime-local" id="scheduleDatetime">
+            <select id="category" onchange="filterCategory(this.value)">
+                <option value="today">Today</option>
+                <option value="thisWeek">This Week</option>
+                <option value="nextWeek">Next Week</option>
+                <option value="all">All</option>
+            </select>
+            <button onclick="addSchedule()">Add</button>
+        </div>
+        <ul id="scheduleList"></ul>
+        <audio id="notificationSound" src="/static/audio/Alarm%20Clock%20Sound%20Effect%20(Animated).mp3"></audio>
+    </div>
+    
+    <script>
+        // Request notification permission if not granted already
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    console.log("Notification permission granted.");
+                } else {
+                    console.warn("Notification permission denied.");
+                }
+            });
+        }
+
+        function addSchedule() {
+            const scheduleInput = document.getElementById("scheduleInput").value;
+            const category = document.getElementById("category").value;
+            const scheduleDatetime = document.getElementById("scheduleDatetime").value;
+        
+            if (scheduleInput.trim() === "" || scheduleDatetime.trim() === "") {
+                alert("Please enter a schedule, category, and datetime.");
+                return;
+            }
+        
+            const schedule = {
+                text: scheduleInput,
+                category: category,
+                datetime: scheduleDatetime,
+            };
+        
+            const schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+            schedules.push(schedule);
+            localStorage.setItem("schedules", JSON.stringify(schedules));
+        
+            filterCategory(category); // Update the displayed schedules for the selected category
+            document.getElementById("scheduleInput").value = "";
+            document.getElementById("scheduleDatetime").value = "";
+        }
+        
+        function filterCategory(category) {
+            const schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+            const filteredSchedules = category === "all" ? schedules : schedules.filter(schedule => schedule.category === category);
+            displaySchedules(filteredSchedules);
+        }
+        
+        function displaySchedules(schedules) {
+            const scheduleList = document.getElementById("scheduleList");
+            scheduleList.innerHTML = "";
+
+            if (schedules.length === 0) {
+                scheduleList.innerHTML = "<li>No schedules or notes found.</li>";
+                return;
+            }
+
+            schedules.forEach((schedule, index) => {
+                const li = document.createElement("li");
+                li.textContent = `Task: ${schedule.text}, Category: ${schedule.category}, Time: ${schedule.datetime}`;
+
+                // Create a button with the "X" label
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "X";
+
+                // Add a click event to delete the schedule
+                deleteButton.onclick = () => deleteSchedule(index);
+
+                // Append the button to the end of the list item
+                li.appendChild(deleteButton);
+
+                // Append the list item to the schedule list
+                scheduleList.appendChild(li);
+            });
+        }
+
+        
+        function deleteSchedule(index) {
+            const schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+            if (index >= 0 && index < schedules.length) {
+                schedules.splice(index, 1);
+                localStorage.setItem("schedules", JSON.stringify(schedules));
+                filterCategory("all"); // Update the displayed schedules for the "all" category
+            }
+        }
+        
+        function checkNotifications() {
+            const schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+        
+            schedules.forEach(schedule => {
+                const scheduledDatetime = new Date(schedule.datetime);
+                const now = new Date();
+        
+                // Calculate the time difference in milliseconds
+                const timeDiff = scheduledDatetime - now;
+        
+                // Notify if the scheduled time is within 2 minutes
+                if (timeDiff > 0 && timeDiff <= 120000) {
+                    const minutesRemaining = Math.ceil(timeDiff / 60000); // Convert milliseconds to minutes
+        
+                    // Create a system notification
+                    if (Notification.permission === "granted") {
+                        const alertMessage = `${schedule.text} - Scheduled in ${minutesRemaining} minutes`;
+                        const notification = new Notification("Reminder", {
+                            body: alertMessage,
+                        });
+        
+                        // Play the audio
+                        const audioElement = document.getElementById("notificationSound");
+        
+                        if (audioElement) {
+                            audioElement.play();
+                        }
+        
+                        // Vibrate for 5 seconds (if supported)
+                        if ("vibrate" in navigator) {
+                            navigator.vibrate([5000]);
+                        }
+        
+                        // Stop the audio after 5 seconds
+                        setTimeout(() => {
+                            if (audioElement) {
+                                audioElement.pause();
+                                audioElement.currentTime = 0; // Reset audio to the beginning
+                            }
+                        }, 5000);
+                    }
+                }
+            });
+        }
+        
+        // Initial load
+        filterCategory("all");
+        
+        // Automatically check for notifications every minute (adjust the interval as needed)
+        setInterval(checkNotifications, 60000); // Check every minute
+    </script>
+</body>
+</html>

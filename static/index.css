@@ -1,0 +1,16 @@
+/* Your CSS styles go here */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: aqua;
+}
+
+.categories {
+    margin-bottom: 20px;
+}
+
+.form input,
+.form select {
+    margin-right: 10px;
+}
